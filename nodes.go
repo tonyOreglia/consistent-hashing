@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 
 	"github.com/gin-gonic/gin"
 )
@@ -58,6 +59,10 @@ func (s *Server) AddNode(c *gin.Context) {
 		s.vNodes = append(s.vNodes, virtualNode{hashValue: hash, nodeId: nodeId})
 	}
 
+	sort.Slice(s.vNodes, func(i, j int) bool {
+		return s.vNodes[i].hashValue < s.vNodes[j].hashValue
+	})
+
 	c.JSON(http.StatusOK, NodeResponse{NodeId: nodeId})
 }
 
@@ -91,4 +96,30 @@ func (s *Server) DeleteNode(c *gin.Context) {
 	s.vNodes = newVirtualNodes
 
 	c.JSON(http.StatusOK, DeleteNodeResponse{NodeUrl: url})
+}
+
+type Node struct {
+	Url    string `json:"url"`
+	NodeId string `json:"nodeId"`
+}
+type GetNodesResponse struct {
+	Nodes []Node `json:"nodes"`
+}
+
+func (s *Server) GetNodes(c *gin.Context) {
+	key := c.Param("key")
+	kHash := hashKey(key)
+
+	targetNode := s.vNodes[0]
+	for index, value := range s.vNodes {
+		log.Println("Checking virtual node at index %s", index)
+		if kHash < value.hashValue {
+			targetNode = s.vNodes[index]
+			break
+		}
+	}
+	resp := GetNodesResponse{
+		Nodes: []Node{{NodeId: targetNode.nodeId, Url: s.nodes[targetNode.nodeId]}},
+	}
+	c.JSON(http.StatusOK, resp)
 }

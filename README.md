@@ -52,11 +52,8 @@ body: {
 
 DELETE /nodes/{node-id}
 
-POST /data -> list of node-ids
-body: {
-    key: string,
-    value: string 
-}
+// identify target nodes for data storage
+GET /nodes/:key -> list of Node URLs
 
 POST /config -> 200 OK
 body: {

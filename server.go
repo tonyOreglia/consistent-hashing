@@ -26,14 +26,11 @@ func NewServer() (s *Server) {
 		})
 	})
 
-	// POST /nodes -> node ID string
 	s.r.POST("/nodes", s.AddNode)
 	s.r.GET("/nodes/count", s.NodeCount)
 	s.r.DELETE("/nodes/:nodeId", s.DeleteNode)
 
-	// s.r.GET("/exists/:word", s.WordExists)
-	// s.r.POST("/add", s.Add)
-	// s.r.GET("/matches/:prefix", s.Matches)
+	s.r.GET("/nodes/:key", s.GetNodes)
 
 	return
 }
