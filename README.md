@@ -4,6 +4,20 @@ This is an implementation of the consistent hashing algorithm.
 
 It is made in order to better understand the method of managing nodes of a distributed NOSQL DB. 
 
+## Running Simulation
+
+Build docker image
+```bash
+docker build -t consistent_hash .   
+```
+
+Run image
+```bash
+docker run -it -p 8080:8080 -v ./:/usr/src/consistent_hash consistent_hash 
+```
+
+Server will auto-restart on save during development
+
 ## Functional Requirements
 The controller would support 
 - adding nodes
