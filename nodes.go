@@ -17,6 +17,10 @@ type AddNodeRequest struct {
 	Url string
 }
 
+type DeleteNodeResponse struct {
+	NodeUrl string `json:"nodeUrl"`
+}
+
 type NodeResponse struct {
 	NodeId string `json:"nodeId"`
 }
@@ -40,8 +44,8 @@ func (s *Server) AddNode(c *gin.Context) {
 
 	nodeId := hashId(nodeUrl)
 
-	if _, ok := s.nodes[nodeUrl]; ok {
-		c.JSON(http.StatusBadRequest, ApiError{Err: fmt.Errorf("node already exists"), Desc: "node already exists"})
+	if _, ok := s.nodes[nodeId]; ok {
+		c.JSON(http.StatusBadRequest, ApiError{Err: fmt.Errorf("node already exists with id %s", nodeId), Desc: "node already exists"})
 		return
 	}
 
@@ -63,4 +67,28 @@ func (s *Server) NodeCount(c *gin.Context) {
 	vNodeCount := len(s.vNodes)
 
 	c.JSON(http.StatusOK, NodeCountResponse{NodeCount: nodeCount, VirtualNodeCount: vNodeCount})
+}
+
+func (s *Server) DeleteNode(c *gin.Context) {
+	nodeId := c.Param("nodeId")
+
+	url, ok := s.nodes[nodeId]
+
+	if !ok {
+		c.JSON(http.StatusNotFound, ApiError{Err: fmt.Errorf("node does not exist"), Desc: "node not found"})
+		return
+	}
+
+	delete(s.nodes, nodeId)
+
+	var newVirtualNodes []virtualNode
+
+	for _, vNode := range s.vNodes {
+		if vNode.nodeId != nodeId {
+			newVirtualNodes = append(newVirtualNodes, vNode)
+		}
+	}
+	s.vNodes = newVirtualNodes
+
+	c.JSON(http.StatusOK, DeleteNodeResponse{NodeUrl: url})
 }
