@@ -3,6 +3,8 @@ package controller
 import (
 	"consistent_hash/hash"
 	"consistent_hash/node"
+	"consistent_hash/server/config"
+
 	"fmt"
 	"log"
 	"sort"
@@ -11,11 +13,13 @@ import (
 type Controller struct {
 	vNodes        []node.VirtualNode
 	nodesUrlsById map[string]string // node-id to node URL map
+	config        *config.Config
 }
 
-func NewController() (c *Controller) {
+func NewController(config *config.Config) (c *Controller) {
 	c = &Controller{
 		nodesUrlsById: make(map[string]string),
+		config:        config,
 	}
 
 	return c
@@ -95,12 +99,47 @@ func (c *Controller) GetNodes(key string) []node.Node {
 	kHash := hash.HashKey(key)
 
 	targetNode := c.vNodes[0]
-	for index, value := range c.vNodes {
-		log.Println("Checking virtual node at index %s", index)
-		if kHash < value.HashValue {
-			targetNode = c.vNodes[index]
-			break
+	res := []node.Node{}
+
+	for i, value := range c.vNodes {
+		log.Println("Checking virtual node at index %s", i)
+		if kHash > value.HashValue {
+			continue
+		}
+
+		targetNode = c.vNodes[i]
+		res = []node.Node{{NodeId: targetNode.NodeId, Url: c.nodesUrlsById[targetNode.NodeId]}}
+
+		j := i
+
+		for len(res) < c.config.Redundancy && len(res) < len(c.nodesUrlsById) {
+			j++
+			if j == len(c.vNodes) {
+				j = 0
+			}
+			newNode := node.Node{NodeId: c.vNodes[j].NodeId, Url: c.nodesUrlsById[c.vNodes[j].NodeId]}
+			if exists(newNode, res) {
+				j++
+				continue
+			}
+			res = append(res, newNode)
+		}
+		break
+
+	}
+
+	if len(res) == 0 {
+		res = []node.Node{{NodeId: c.vNodes[0].NodeId, Url: c.nodesUrlsById[c.vNodes[0].NodeId]}}
+	}
+
+	return res
+}
+
+func exists(newNode node.Node, nodes []node.Node) bool {
+	for _, v := range nodes {
+		if v == newNode {
+			return true
 		}
 	}
-	return []node.Node{{NodeId: targetNode.NodeId, Url: c.nodesUrlsById[targetNode.NodeId]}}
+	return false
 }

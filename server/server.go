@@ -30,7 +30,7 @@ func NewServer() (s *Server) {
 
 	s = &Server{
 		r:          gin.Default(),
-		controller: controller.NewController(),
+		controller: controller.NewController(config),
 		config:     config,
 	}
 
