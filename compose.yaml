@@ -1,0 +1,65 @@
+services:
+  server:
+    image: consistent_hash
+    container_name: server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/usr/src/consistent_hash
+    networks:
+      - nosql-net
+
+  # Example: to run 3 nosql db nodes using Redis, an open-source in-memory key-value store
+  nosql-db-node1:
+    image: redis:7-alpine
+    container_name: nosql-db-node1
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    ports:
+      - "8001:6379"
+    networks:
+      - nosql-net
+
+  nosql-db-node2:
+    image: redis:7-alpine
+    container_name: nosql-db-node2
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    ports:
+      - "8002:6379"
+    networks:
+      - nosql-net
+
+  nosql-db-node3:
+    image: redis:7-alpine
+    container_name: nosql-db-node3
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    ports:
+      - "8003:6379"
+    networks:
+      - nosql-net
+
+  nosql-db-node4:
+    image: redis:7-alpine
+    container_name: nosql-db-node4
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    ports:
+      - "8004:6379"
+    networks:
+      - nosql-net
+
+  nosql-db-node5:
+    image: redis:7-alpine
+    container_name: nosql-db-node5
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    ports:
+      - "8005:6379"
+    networks:
+      - nosql-net
+
+networks:
+  nosql-net:
+    driver: bridge
