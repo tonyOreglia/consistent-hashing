@@ -45,6 +45,9 @@ func NewServer() (s *Server) {
 	s.r.DELETE("/nodes/:nodeId", s.DeleteNode)
 	s.r.GET("/nodes/:key", s.GetNodes)
 
+	s.r.POST("/data/:key", s.StoreValue)
+	s.r.GET("/data/:key", s.GetValue)
+
 	return
 }
 

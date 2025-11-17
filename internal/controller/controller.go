@@ -3,6 +3,7 @@ package controller
 import (
 	"consistent_hash/internal/hash"
 	"consistent_hash/internal/node"
+	"consistent_hash/internal/redis"
 	"consistent_hash/internal/server/config"
 
 	"fmt"
@@ -45,6 +46,12 @@ type NodeCountResponse struct {
 func (c *Controller) AddNode(nodeUrl string) (string, error) {
 	log.Println("Adding node at ", nodeUrl)
 
+	client, err := redis.New(nodeUrl)
+
+	if err != nil {
+		return "", fmt.Errorf("unable to connect with node at %s: %v", nodeUrl, err)
+	}
+
 	nodeId := hash.HashId(nodeUrl)
 
 	if _, ok := c.nodesUrlsById[nodeId]; ok {
@@ -57,7 +64,7 @@ func (c *Controller) AddNode(nodeUrl string) (string, error) {
 	// create 100 virtual nodes for this server
 	for i := 0; i < 10; i++ {
 		hash := hash.HashKey(fmt.Sprintf("%s_%d", nodeUrl, i))
-		c.vNodes = append(c.vNodes, node.VirtualNode{HashValue: hash, NodeId: nodeId})
+		c.vNodes = append(c.vNodes, node.VirtualNode{HashValue: hash, NodeId: nodeId, Client: client})
 	}
 
 	sort.Slice(c.vNodes, func(i, j int) bool {
@@ -147,4 +154,81 @@ func exists(newNode GetNodesResponse, nodes []GetNodesResponse) bool {
 		}
 	}
 	return false
+}
+
+func isUnique(newNode node.VirtualNode, nodes []node.VirtualNode) bool {
+	for _, v := range nodes {
+		if v == newNode {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *Controller) StoreValue(key string, content string) error {
+	targetNodes := c.findNodes(key)
+
+	for _, node := range targetNodes {
+		log.Printf("storing content for key %s on node %s", key, node.NodeId)
+		err := node.Client.Set(key, content)
+		if err != nil {
+			return fmt.Errorf("unable to set value on node %s: %v", node.NodeId, err)
+		}
+	}
+	return nil
+}
+
+func (c *Controller) findNodes(key string) []node.VirtualNode {
+	kHash := hash.HashKey(key)
+	targetNodes := []node.VirtualNode{}
+
+	for i, value := range c.vNodes {
+		if kHash > value.HashValue {
+			continue
+		}
+
+		targetNode := c.vNodes[i]
+		targetNodes = append(targetNodes, targetNode)
+
+		j := i
+
+		for len(targetNodes) < c.config.Redundancy && len(targetNodes) < len(c.nodesUrlsById) {
+			j++
+			if j == len(c.vNodes) {
+				j = 0
+			}
+			if !isUnique(c.vNodes[j], targetNodes) {
+				j++
+				continue
+			}
+			targetNodes = append(targetNodes, c.vNodes[j])
+		}
+		break
+
+	}
+
+	if len(targetNodes) == 0 {
+		targetNodes = append(targetNodes, c.vNodes[0])
+	}
+	return targetNodes
+}
+
+func (c *Controller) GetValue(key string) (string, error) {
+	targetNodes := c.findNodes(key)
+	contents := []string{}
+
+	for _, node := range targetNodes {
+		content, err := node.Client.Get(key)
+		if err != nil {
+			return "", fmt.Errorf("failed retrieving value from node %s: %v", node.NodeId, err)
+		}
+		log.Printf("got value %s for key %s from node %s", content, key, node.NodeId)
+		contents = append(contents, content)
+	}
+	for i, v := range contents {
+		if v != contents[0] {
+			return "", fmt.Errorf("content mismatch %s from node %s != %s from node %s", contents[0], targetNodes[0].NodeId, contents[i], targetNodes[i].NodeId)
+		}
+	}
+	return contents[0], nil
 }

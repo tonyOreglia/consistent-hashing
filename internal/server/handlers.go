@@ -20,8 +20,6 @@ type NodeResponse struct {
 }
 
 func (s *Server) AddNode(c *gin.Context) {
-	// extract url from body
-
 	var req AddNodeRequest
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, ApiError{Err: err, Desc: "unable to parse request"})
@@ -65,4 +63,37 @@ func (s *Server) GetNodes(c *gin.Context) {
 	resp := s.controller.GetNodes(key)
 
 	c.JSON(http.StatusOK, resp)
+}
+
+type UpsertKeyValueRequest struct {
+	Content string `json:"content"`
+}
+
+func (s *Server) StoreValue(c *gin.Context) {
+	key := c.Param("key")
+	var req UpsertKeyValueRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ApiError{Err: err, Desc: "unable to parse request"})
+		return
+	}
+	err := s.controller.StoreValue(key, req.Content)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ApiError{Err: err, Desc: "problem storing value"})
+		return
+	}
+}
+
+type GetValueResponse struct {
+	Content string `json:"content"`
+}
+
+func (s *Server) GetValue(c *gin.Context) {
+	key := c.Param("key")
+	content, err := s.controller.GetValue(key)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ApiError{Err: err, Desc: "problem retrieving value"})
+		return
+	}
+	c.JSON(http.StatusOK, GetValueResponse{Content: content})
+
 }
