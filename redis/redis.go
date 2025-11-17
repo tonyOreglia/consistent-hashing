@@ -14,21 +14,12 @@ type Client struct {
 }
 
 // Config holds Redis connection configuration
-type Config struct {
-	Host     string
-	Port     int
-	Password string
-	DB       int
-}
-
-// New creates a new Redis client
-func New(config Config) (*Client, error) {
-	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
-
+// New creates a new Redis client from a URL (assumes no password)
+func New(url string) (*Client, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: config.Password,
-		DB:       config.DB,
+		Addr:     url,
+		Password: "", // No password assumed
+		DB:       0,  // just connect to DB 0
 	})
 
 	ctx := context.Background()
