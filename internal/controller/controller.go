@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"consistent_hash/hash"
-	"consistent_hash/node"
-	"consistent_hash/server/config"
+	"consistent_hash/internal/hash"
+	"consistent_hash/internal/node"
+	"consistent_hash/internal/server/config"
 
 	"fmt"
 	"log"

@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"consistent_hash/controller"
-	"consistent_hash/server/config"
+	"consistent_hash/internal/controller"
+	"consistent_hash/internal/server/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

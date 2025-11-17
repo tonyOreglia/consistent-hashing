@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"consistent_hash/server"
+	"consistent_hash/internal/server"
 
 	"github.com/urfave/cli/v3"
 )
