@@ -1,24 +1,37 @@
 package server
 
 import (
+	"log"
 	"net/http"
 
 	"consistent_hash/controller"
+	"consistent_hash/server/config"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 // Server abstraction.
 type Server struct {
 	r          *gin.Engine
 	controller *controller.Controller
+	config     *config.Config
 }
 
 // NewServer instantiates a new HTTP Server.
 func NewServer() (s *Server) {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: Error loading .env file: %v", err)
+	}
+
+	// Load configuration from environment variables
+	config := config.NewConfig()
+
 	s = &Server{
 		r:          gin.Default(),
 		controller: controller.NewController(),
+		config:     config,
 	}
 
 	s.r.GET("/ping", func(c *gin.Context) {
@@ -30,7 +43,6 @@ func NewServer() (s *Server) {
 	s.r.POST("/nodes", s.AddNode)
 	s.r.GET("/nodes/count", s.NodeCount)
 	s.r.DELETE("/nodes/:nodeId", s.DeleteNode)
-
 	s.r.GET("/nodes/:key", s.GetNodes)
 
 	return
