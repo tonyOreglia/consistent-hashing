@@ -95,11 +95,16 @@ func (c *Controller) DeleteNode(nodeId string) (string, error) {
 	return url, nil
 }
 
-func (c *Controller) GetNodes(key string) []node.Node {
+type GetNodesResponse struct {
+	Url    string `json:"url"`
+	NodeId string `json:"nodeId"`
+}
+
+func (c *Controller) GetNodes(key string) []GetNodesResponse {
 	kHash := hash.HashKey(key)
 
 	targetNode := c.vNodes[0]
-	res := []node.Node{}
+	res := []GetNodesResponse{}
 
 	for i, value := range c.vNodes {
 		log.Println("Checking virtual node at index %s", i)
@@ -108,7 +113,7 @@ func (c *Controller) GetNodes(key string) []node.Node {
 		}
 
 		targetNode = c.vNodes[i]
-		res = []node.Node{{NodeId: targetNode.NodeId, Url: c.nodesUrlsById[targetNode.NodeId]}}
+		res = []GetNodesResponse{{NodeId: targetNode.NodeId, Url: c.nodesUrlsById[targetNode.NodeId]}}
 
 		j := i
 
@@ -117,7 +122,7 @@ func (c *Controller) GetNodes(key string) []node.Node {
 			if j == len(c.vNodes) {
 				j = 0
 			}
-			newNode := node.Node{NodeId: c.vNodes[j].NodeId, Url: c.nodesUrlsById[c.vNodes[j].NodeId]}
+			newNode := GetNodesResponse{NodeId: c.vNodes[j].NodeId, Url: c.nodesUrlsById[c.vNodes[j].NodeId]}
 			if exists(newNode, res) {
 				j++
 				continue
@@ -129,13 +134,13 @@ func (c *Controller) GetNodes(key string) []node.Node {
 	}
 
 	if len(res) == 0 {
-		res = []node.Node{{NodeId: c.vNodes[0].NodeId, Url: c.nodesUrlsById[c.vNodes[0].NodeId]}}
+		res = []GetNodesResponse{{NodeId: c.vNodes[0].NodeId, Url: c.nodesUrlsById[c.vNodes[0].NodeId]}}
 	}
 
 	return res
 }
 
-func exists(newNode node.Node, nodes []node.Node) bool {
+func exists(newNode GetNodesResponse, nodes []GetNodesResponse) bool {
 	for _, v := range nodes {
 		if v == newNode {
 			return true
