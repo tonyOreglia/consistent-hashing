@@ -1,23 +1,24 @@
-package consistent_hash
+package server
 
 import (
 	"net/http"
+
+	"consistent_hash/controller"
 
 	"github.com/gin-gonic/gin"
 )
 
 // Server abstraction.
 type Server struct {
-	r      *gin.Engine
-	vNodes []virtualNode
-	nodes  map[string]string // node-id to node URL map
+	r          *gin.Engine
+	controller *controller.Controller
 }
 
 // NewServer instantiates a new HTTP Server.
 func NewServer() (s *Server) {
 	s = &Server{
-		r:     gin.Default(),
-		nodes: make(map[string]string),
+		r:          gin.Default(),
+		controller: controller.NewController(),
 	}
 
 	s.r.GET("/ping", func(c *gin.Context) {

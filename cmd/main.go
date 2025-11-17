@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"consistent_hash"
+	"consistent_hash/server"
 
 	"github.com/urfave/cli/v3"
 )
@@ -15,7 +15,7 @@ func main() {
 		Name:  "server",
 		Usage: "Start the web server",
 		Action: func(context.Context, *cli.Command) error {
-			s := consistent_hash.NewServer()
+			s := server.NewServer()
 			return s.Run(":8080")
 		},
 	}

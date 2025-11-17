@@ -1,4 +1,4 @@
-package consistent_hash
+package server
 
 import "encoding/json"
 
