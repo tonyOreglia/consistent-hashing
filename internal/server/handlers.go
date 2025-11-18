@@ -29,7 +29,7 @@ func (s *Server) AddNode(c *gin.Context) {
 
 	log.Println("Adding node at ", nodeUrl)
 
-	nodeId, err := s.controller.AddNode(nodeUrl)
+	nodeId, err := s.controller.AddNode(nodeUrl, s.redisFactory)
 
 	if err != nil {
 		c.JSON(http.StatusNotFound, ApiError{Err: err, Desc: "problem adding node"})

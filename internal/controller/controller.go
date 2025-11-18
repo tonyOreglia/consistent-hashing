@@ -11,6 +11,10 @@ import (
 	"sort"
 )
 
+type RedisFactory interface {
+	New(nodeUrl string) (*redis.Client, error)
+}
+
 type Controller struct {
 	vNodes        []node.VirtualNode
 	nodesUrlsById map[string]string // node-id to node URL map
@@ -26,24 +30,7 @@ func NewController(config *config.Config) (c *Controller) {
 	return c
 }
 
-type AddNodeRequest struct {
-	Url string
-}
-
-type DeleteNodeResponse struct {
-	NodeUrl string `json:"nodeUrl"`
-}
-
-type NodeResponse struct {
-	NodeId string `json:"nodeId"`
-}
-
-type NodeCountResponse struct {
-	NodeCount        int `json:"nodeCount"`
-	VirtualNodeCount int `json:"virtualNodeCount"`
-}
-
-func (c *Controller) AddNode(nodeUrl string) (string, error) {
+func (c *Controller) AddNode(nodeUrl string, redis RedisFactory) (string, error) {
 	log.Println("Adding node at ", nodeUrl)
 
 	client, err := redis.New(nodeUrl)
@@ -74,6 +61,11 @@ func (c *Controller) AddNode(nodeUrl string) (string, error) {
 	return nodeId, nil
 }
 
+type NodeCountResponse struct {
+	NodeCount        int `json:"nodeCount"`
+	VirtualNodeCount int `json:"virtualNodeCount"`
+}
+
 func (c *Controller) NodeCount() NodeCountResponse {
 	nodeCount := len(c.nodesUrlsById)
 	vNodeCount := len(c.vNodes)
@@ -102,25 +94,20 @@ func (c *Controller) DeleteNode(nodeId string) (string, error) {
 	return url, nil
 }
 
-type GetNodesResponse struct {
-	Url    string `json:"url"`
-	NodeId string `json:"nodeId"`
-}
-
-func (c *Controller) GetNodes(key string) []GetNodesResponse {
+func (c *Controller) GetNodes(key string) []node.VirtualNode {
 	kHash := hash.HashKey(key)
 
 	targetNode := c.vNodes[0]
-	res := []GetNodesResponse{}
+	res := []node.VirtualNode{}
 
 	for i, value := range c.vNodes {
-		log.Println("Checking virtual node at index %s", i)
+		log.Printf("checking virtual node at index %d", i)
 		if kHash > value.HashValue {
 			continue
 		}
 
 		targetNode = c.vNodes[i]
-		res = []GetNodesResponse{{NodeId: targetNode.NodeId, Url: c.nodesUrlsById[targetNode.NodeId]}}
+		res = []node.VirtualNode{{NodeId: targetNode.NodeId}}
 
 		j := i
 
@@ -129,8 +116,8 @@ func (c *Controller) GetNodes(key string) []GetNodesResponse {
 			if j == len(c.vNodes) {
 				j = 0
 			}
-			newNode := GetNodesResponse{NodeId: c.vNodes[j].NodeId, Url: c.nodesUrlsById[c.vNodes[j].NodeId]}
-			if exists(newNode, res) {
+			newNode := node.VirtualNode{NodeId: c.vNodes[j].NodeId}
+			if !isUnique(newNode, res) {
 				j++
 				continue
 			}
@@ -141,19 +128,10 @@ func (c *Controller) GetNodes(key string) []GetNodesResponse {
 	}
 
 	if len(res) == 0 {
-		res = []GetNodesResponse{{NodeId: c.vNodes[0].NodeId, Url: c.nodesUrlsById[c.vNodes[0].NodeId]}}
+		res = []node.VirtualNode{{NodeId: c.vNodes[0].NodeId}}
 	}
 
 	return res
-}
-
-func exists(newNode GetNodesResponse, nodes []GetNodesResponse) bool {
-	for _, v := range nodes {
-		if v == newNode {
-			return true
-		}
-	}
-	return false
 }
 
 func isUnique(newNode node.VirtualNode, nodes []node.VirtualNode) bool {

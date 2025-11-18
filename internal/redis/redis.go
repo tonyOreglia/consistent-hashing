@@ -13,9 +13,11 @@ type Client struct {
 	ctx    context.Context
 }
 
+type RedisFactory struct{}
+
 // Config holds Redis connection configuration
 // New creates a new Redis client from a URL (assumes no password)
-func New(url string) (*Client, error) {
+func (RedisFactory) New(url string) (*Client, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     url,
 		Password: "", // No password assumed

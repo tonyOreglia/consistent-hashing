@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"consistent_hash/internal/controller"
+	"consistent_hash/internal/redis"
 	"consistent_hash/internal/server/config"
 
 	"github.com/gin-gonic/gin"
@@ -13,9 +14,10 @@ import (
 
 // Server abstraction.
 type Server struct {
-	r          *gin.Engine
-	controller *controller.Controller
-	config     *config.Config
+	r            *gin.Engine
+	controller   *controller.Controller
+	config       *config.Config
+	redisFactory *redis.RedisFactory
 }
 
 // NewServer instantiates a new HTTP Server.
@@ -28,10 +30,13 @@ func NewServer() (s *Server) {
 	// Load configuration from environment variables
 	config := config.NewConfig()
 
+	rf := &redis.RedisFactory{}
+
 	s = &Server{
-		r:          gin.Default(),
-		controller: controller.NewController(config),
-		config:     config,
+		r:            gin.Default(),
+		controller:   controller.NewController(config),
+		config:       config,
+		redisFactory: rf,
 	}
 
 	s.r.GET("/ping", func(c *gin.Context) {

@@ -2,7 +2,7 @@
 
 This is an implementation of the consistent hashing algorithm.
 
-It is made in order to better understand the method of managing nodes of a distributed NOSQL DB. 
+It is made in order to better understand the method of managing nodes of a distributed DB. 
 
 ## Running Simulation
 
