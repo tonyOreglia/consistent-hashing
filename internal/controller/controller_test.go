@@ -128,3 +128,47 @@ func TestAddNode(t *testing.T) {
 		}
 	}
 }
+
+func TestFindNodes(t *testing.T) {
+	cfg := &config.Config{
+		ReadQuorum:  1,
+		WriteQuorum: 1,
+		Redundancy:  1,
+	}
+	mockedRedis := &mockedRedisFactory{}
+	cntr := NewController(cfg)
+	url1 := "node-1"
+	_, err := cntr.AddNode(url1, mockedRedis)
+	if err != nil {
+		t.Fatalf("error adding node1: %v", err)
+	}
+	n2Id, _ := cntr.AddNode("node-2", mockedRedis)
+	node3Id, _ := cntr.AddNode("node-3", mockedRedis)
+	url4 := "node-4"
+	_, err = cntr.AddNode(url4, mockedRedis)
+	if err != nil {
+		t.Fatalf("error adding node1: %v", err)
+	}
+	res := cntr.findNodes("key-1")
+	if len(res) != 1 {
+		t.Fatalf("expected single result with redundancy 1")
+	}
+	if res[0].NodeId != node3Id {
+		t.Fatalf("expected node ID %s, but got %s", node3Id, res[0].NodeId)
+	}
+	cntr.config = &config.Config{
+		ReadQuorum:  1,
+		WriteQuorum: 1,
+		Redundancy:  2,
+	}
+	res = cntr.findNodes("key-1")
+	if len(res) != 2 {
+		t.Fatalf("expected single result with redundancy 1")
+	}
+	if res[0].NodeId != node3Id {
+		t.Fatalf("expected node ID %s, but got %s", node3Id, res[0].NodeId)
+	}
+	if res[1].NodeId != n2Id {
+		t.Fatalf("expected node ID %s, but got %s", n2Id, res[1].NodeId)
+	}
+}
