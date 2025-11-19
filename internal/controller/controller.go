@@ -1,14 +1,14 @@
 package controller
 
 import (
+	"fmt"
+	"log"
+	"sort"
+
 	"consistent_hash/internal/hash"
 	"consistent_hash/internal/node"
 	"consistent_hash/internal/redis"
 	"consistent_hash/internal/server/config"
-
-	"fmt"
-	"log"
-	"sort"
 )
 
 type RedisFactory interface {
@@ -34,7 +34,6 @@ func (c *Controller) AddNode(nodeUrl string, redis RedisFactory) (string, error)
 	log.Println("Adding node at ", nodeUrl)
 
 	client, err := redis.New(nodeUrl)
-
 	if err != nil {
 		return "", fmt.Errorf("unable to connect with node at %s: %v", nodeUrl, err)
 	}
@@ -77,7 +76,7 @@ func (c *Controller) DeleteNode(nodeId string) (string, error) {
 	url, ok := c.nodesUrlsById[nodeId]
 
 	if !ok {
-		return "", fmt.Errorf("node does not exist")
+		return "", fmt.Errorf("unable to delete node with id %s: %w", nodeId, ErrNodeDoesNotExist)
 	}
 
 	delete(c.nodesUrlsById, nodeId)

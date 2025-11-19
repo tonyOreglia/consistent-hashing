@@ -16,9 +16,60 @@ func (m mockedRedisFactory) New(url string) (*redis.Client, error) {
 	return c, nil
 }
 
+func TestDeleteNode(t *testing.T) {
+	cfg := config.NewConfig()
+	mockedRedis := &mockedRedisFactory{}
+	cntr := NewController(cfg)
+	url1 := "node-1"
+	node1Id, err := cntr.AddNode(url1, mockedRedis)
+	if err != nil {
+		t.Fatalf("error adding node1: %v", err)
+	}
+	cntr.AddNode("node-2", mockedRedis)
+	cntr.AddNode("node-3", mockedRedis)
+	url4 := "node-4"
+	node4Id, err := cntr.AddNode(url4, mockedRedis)
+	if err != nil {
+		t.Fatalf("error adding node1: %v", err)
+	}
+	// node5Id := cntr.AddNode("node-5", mockedRedis)
+
+	deletedUrl, err := cntr.DeleteNode(node4Id)
+	if err != nil {
+		t.Fatalf("error deleting node1: %v", err)
+	}
+	if deletedUrl != url4 {
+		t.Fatalf("deleted URL [%s] not equal to url4 [%s]", deletedUrl, url4)
+	}
+
+	_, err = cntr.DeleteNode("missing-node")
+	if err == nil {
+		t.Fatalf("expected error deleting missing-node")
+	}
+	if !errors.Is(err, ErrNodeDoesNotExist) {
+		t.Fatalf("expecting ErrNodeDoesNotExist type error, got %v", err)
+	}
+
+	deletedUrl, err = cntr.DeleteNode(node1Id)
+	if err != nil {
+		t.Fatalf("error deleting node1: %v", err)
+	}
+	if deletedUrl != url1 {
+		t.Fatalf("deleted URL [%s] not equal to url1 [%s]", deletedUrl, url1)
+	}
+
+	// cannot delete same node twice
+	_, err = cntr.DeleteNode(node1Id)
+	if err == nil {
+		t.Fatalf("expected error deleting missing-node")
+	}
+	if !errors.Is(err, ErrNodeDoesNotExist) {
+		t.Fatalf("expecting ErrNodeDoesNotExist type error, got %v", err)
+	}
+}
+
 func TestAddNode(t *testing.T) {
 	cfg := config.NewConfig()
-
 	mockedRedis := &mockedRedisFactory{}
 
 	type expectedResult struct {
