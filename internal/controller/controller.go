@@ -42,7 +42,7 @@ func (c *Controller) AddNode(nodeUrl string, redis RedisFactory) (string, error)
 	nodeId := hash.HashId(nodeUrl)
 
 	if _, ok := c.nodesUrlsById[nodeId]; ok {
-		return "", fmt.Errorf("node already exists with id %s", nodeId)
+		return "", fmt.Errorf("unable to add node at %s: %w", c.nodesUrlsById[nodeId], ErrNodeAlreadyExists)
 	}
 
 	c.nodesUrlsById[nodeId] = nodeUrl
